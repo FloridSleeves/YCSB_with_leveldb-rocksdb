@@ -34,7 +34,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
+import org.rocksdb.util.SizeUnit;
 /**
  * RocksDB binding for <a href="http://rocksdb.org/">RocksDB</a>.
  *
@@ -100,22 +100,25 @@ public class RocksDBClient extends DB {
       cfDescriptors.add(cfDescriptor);
     }
 
-    int rocksThreads = 1;
+    int rocksThreads = 1;//Runtime.getRuntime().availableProcessors()*2;
     //System.out.println("THREADS IS "+ rocksThreads);
     
 
     if(cfDescriptors.isEmpty()) {
       final Options options = new Options()
-          //.optimizeLevelStyleCompaction()
+          .optimizeLevelStyleCompaction()
           .setCreateIfMissing(true)
           .setCreateMissingColumnFamilies(true)
           .setIncreaseParallelism(rocksThreads)
           .setMaxBackgroundCompactions(rocksThreads)
           .setInfoLogLevel(InfoLogLevel.INFO_LEVEL)
 	  .setStatistics(new Statistics())
-	  .setDbWriteBufferSize(16 * 1024 * 1024) //16MB sst table
-	  .setBlockSize(4 * 1024);// 4KB block size
-      
+	  .setWriteBufferSize(16 * 1024 * 1024); //16MB sst table
+      final BlockBasedTableConfig table_options = new BlockBasedTableConfig();
+      table_options.setBlockCacheSize(64 * SizeUnit.MB)//64MB Cache
+	.setBlockSize(4 * SizeUnit.KB);//4KB block size
+      options.setTableFormatConfig(table_options);
+
       dbOptions = options;
       return RocksDB.open(options, rocksDbDir.toAbsolutePath().toString());
     } else {
@@ -126,8 +129,12 @@ public class RocksDBClient extends DB {
           .setMaxBackgroundCompactions(rocksThreads)
           .setInfoLogLevel(InfoLogLevel.INFO_LEVEL)
 	  .setStatistics(new Statistics())
-	  .setDbWriteBufferSize(16 * 1024 * 1024) //16MB sst table
-	  .setBlockSize(4 * 1024);// 4KB block size;
+      //.setDbWriteBufferSize(16 * 1024 * 1024); //16MB sst table
+      /*final BlockBasedTableConfig table_options = new BlockBasedTableConfig();
+      table_options.setBlockCacheSize(64 * SizeUnit.KB)//64KB Cache
+	.setBlockSize(4 * SizeUnit.KB);//4KB block size
+      options.setTableFormatConfig(table_options);
+      */
       dbOptions = options;
       
       final List<ColumnFamilyHandle> cfHandles = new ArrayList<>();

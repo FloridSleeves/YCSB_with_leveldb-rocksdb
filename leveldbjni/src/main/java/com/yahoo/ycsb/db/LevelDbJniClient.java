@@ -38,10 +38,11 @@ public class LevelDbJniClient extends DB {
   private static synchronized void getDBInstance() {
     if (db == null) {
       Options options = new Options();
-      options.cacheSize(8 * 1048576); // 8MB cache
+      options.cacheSize(64 * 1048576); // 64MB cache
       options.createIfMissing(true);
       options.blockSize(4*1024);//4K block size
       options.writeBufferSize(16*1048576);//16MB sstable
+      //options.filter_policy(new BloomFilterPolicy(10));
       try {
         db = factory.open(new File("/ssdmnt/ssd0/leveldb_database"), options);
       } catch (IOException e) {
